@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"metadata": {"name": "nocode"}},
+    {"metadata": {"name": "auth"}},
+    {"metadata": {"name": "billing"}},
+    {"metadata": {"name": "notification"}},
+    {"metadata": {"name": "platform"}},
+    {"metadata": {"name": "kube-system"}},
+    {"metadata": {"name": "monitoring"}}
+  ]
+}

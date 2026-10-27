@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Discovery Knowledge Base - Dependency Graph</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/vis-network.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .graph-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .toolbar {
+            padding: 12px 16px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+        }
+
+        .btn {
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: #f9f9f9;
+            border-color: #b0b0b0;
+        }
+
+        .btn.active {
+            background: #2196F3;
+            color: white;
+            border-color: #2196F3;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            margin: 0 4px;
+        }
+
+        #network {
+            flex: 1;
+            background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+        }
+
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-left: 1px solid #e0e0e0;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .node-info {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .node-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+
+        .node-type {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 3px;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .node-type.service { background: #2196F3; }
+        .node-type.database { background: #4CAF50; }
+        .node-type.cache { background: #FF9800; }
+        .node-type.external { background: #9C27B0; }
+        .node-type.cloud { background: #00BCD4; }
+
+        .node-detail {
+            font-size: 12px;
+            color: #666;
+            margin: 4px 0;
+            word-break: break-all;
+        }
+
+        .node-detail-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .dependency-list {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .dependency-item {
+            padding: 6px;
+            margin: 4px 0;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dependency-item:hover {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+
+        .dependency-count {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2196F3;
+            margin: 8px 0;
+        }
+
+        .empty-state {
+            color: #999;
+            font-size: 13px;
+            padding: 16px 0;
+            text-align: center;
+        }
+
+        .legend {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-dot.service { background: #2196F3; }
+        .legend-dot.database { background: #4CAF50; }
+        .legend-dot.cache { background: #FF9800; }
+        .legend-dot.external { background: #9C27B0; }
+        .legend-dot.cloud { background: #00BCD4; }
+        .legend-dot.postgres { background: #336791; }
+        .legend-dot.mongodb { background: #13AA52; }
+        .legend-dot.redis { background: #DC382D; }
+        .legend-dot.oss { background: #FF6B35; }
+        .legend-dot.kafka { background: #231F20; }
+
+        .graph-info {
+            background: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            border-radius: 4px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #2e7d32;
+            margin-bottom: 12px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="graph-container">
+            <div class="toolbar">
+                <input type="text" class="search-box" id="searchBox" placeholder="Search services, instances, databases...">
+
+                <div class="filter-group">
+                    <span class="filter-label">Show:</span>
+                    <button class="btn active" data-filter="services">Services</button>
+                    <button class="btn active" data-filter="databases">Databases</button>
+                    <button class="btn active" data-filter="caches">Cache</button>
+                    <button class="btn active" data-filter="external">External</button>
+                </div>
+
+                <button class="btn" id="resetBtn">Reset View</button>
+                <button class="btn" id="fitBtn">Fit Graph</button>
+            </div>
+            <div id="network"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="graph-info" id="graphInfo">
+                <strong>Nodes:</strong> <span id="nodeCount">0</span> | <strong>Edges:</strong> <span id="edgeCount">0</span>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Legend</div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot service"></div>
+                        <span>Microservice</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot postgres"></div>
+                        <span>PostgreSQL</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot mongodb"></div>
+                        <span>MongoDB</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot redis"></div>
+                        <span>Redis</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot oss"></div>
+                        <span>OSS Bucket</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot kafka"></div>
+                        <span>Kafka Topic</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section" id="selectedNodeSection" style="display: none;">
+                <div class="sidebar-title">Selected Node</div>
+                <div id="selectedNodeInfo"></div>
+            </div>
+
+            <div class="sidebar-section" id="dependenciesSection" style="display: none;">
+                <div class="sidebar-title">Dependencies</div>
+                <div id="dependenciesList" class="dependency-list"></div>
+            </div>
+
+            <div class="sidebar-section" id="dependentsSection" style="display: none;">
+                <div class="sidebar-title">Dependents</div>
+                <div id="dependentsList" class="dependency-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SAMPLE_DATA = {
+            nodes: [
+                { id: "auth-service", label: "auth-service", type: "service", namespace: "core", cluster: "k8s-prod-1" },
+                { id: "api-gateway", label: "api-gateway", type: "service", namespace: "core", cluster: "k8s-prod-1" },
+                { id: "user-service", label: "user-service", type: "service", namespace: "core", cluster: "k8s-prod-1" },
+                { id: "order-service", label: "order-service", type: "service", namespace: "commerce", cluster: "k8s-prod-2" },
+                { id: "payment-service", label: "payment-service", type: "service", namespace: "commerce", cluster: "k8s-prod-2" },
+                { id: "notification-service", label: "notification-service", type: "service", namespace: "common", cluster: "k8s-prod-1" },
+
+                { id: "pgm-user-db", label: "pgm-user-db", type: "database", dbType: "postgres", instanceId: "pgm-8a2b3c1d", envKey: "RDS_USER_HOST", endpoint: "user-db.c3hc.rds.aliyuncs.com" },
+                { id: "pgm-order-db", label: "pgm-order-db", type: "database", dbType: "postgres", instanceId: "pgm-7f1e2g3h", envKey: "RDS_ORDER_HOST", endpoint: "order-db.c3hc.rds.aliyuncs.com" },
+                { id: "dds-user-cache", label: "dds-user-cache", type: "database", dbType: "mongodb", instanceId: "dds-5k4j3i2h", envKey: "MONGO_USER_URI", endpoint: "user-cache.mongodb.rds.aliyuncs.com" },
+
+                { id: "r-payment-cache", label: "r-payment-cache", type: "cache", cacheType: "redis", instanceId: "r-4m2n1o9p", envKey: "REDIS_PAYMENT", endpoint: "payment-cache.redis.rds.aliyuncs.com" },
+                { id: "r-session-cache", label: "r-session-cache", type: "cache", cacheType: "redis", instanceId: "r-9z8x7y6w", envKey: "REDIS_SESSION", endpoint: "session-cache.redis.rds.aliyuncs.com" },
+
+                { id: "oss-attachments", label: "oss-attachments", type: "external", externalType: "oss", instanceId: "oss-attachments-prod", envKey: "OSS_BUCKET", endpoint: "oss-attachments-prod.oss-cn-hangzhou.aliyuncs.com" },
+                { id: "kafka-events", label: "kafka-events", type: "external", externalType: "kafka", instanceId: "kafka-cluster-prod", envKey: "KAFKA_BROKERS", endpoint: "kafka-prod-1.mq.aliyuncs.com:9092" },
+                { id: "sls-logging", label: "sls-logging", type: "external", externalType: "sls", instanceId: "mekari-logs", envKey: "LOG_PROJECT", endpoint: "mekari-logs.log.aliyuncs.com" },
+            ],
+            edges: [
+                { from: "api-gateway", to: "auth-service", label: "authenticate", protocol: "gRPC" },
+                { from: "api-gateway", to: "user-service", label: "query", protocol: "HTTP" },
+                { from: "api-gateway", to: "order-service", label: "query", protocol: "HTTP" },
+                { from: "auth-service", to: "pgm-user-db", label: "read/write", protocol: "TCP" },
+                { from: "user-service", to: "pgm-user-db", label: "read/write", protocol: "TCP" },
+                { from: "user-service", to: "dds-user-cache", label: "cache", protocol: "TCP" },
+                { from: "user-service", to: "r-session-cache", label: "sessions", protocol: "TCP" },
+                { from: "order-service", to: "pgm-order-db", label: "read/write", protocol: "TCP" },
+                { from: "order-service", to: "payment-service", label: "authorize", protocol: "gRPC" },
+                { from: "order-service", to: "kafka-events", label: "publish", protocol: "AMQP" },
+                { from: "payment-service", to: "r-payment-cache", label: "cache", protocol: "TCP" },
+                { from: "notification-service", to: "kafka-events", label: "consume", protocol: "AMQP" },
+                { from: "notification-service", to: "oss-attachments", label: "read", protocol: "HTTP" },
+                { from: "notification-service", to: "sls-logging", label: "logs", protocol: "HTTP" },
+                { from: "order-service", to: "oss-attachments", label: "store", protocol: "HTTP" },
+            ]
+        };
+
+        class ServiceGraph {
+            constructor(containerId, data) {
+                this.container = document.getElementById(containerId);
+                this.data = data;
+                this.nodes = new vis.DataSet([]);
+                this.edges = new vis.DataSet([]);
+                this.network = null;
+                this.selectedNodeId = null;
+                this.filterState = { services: true, databases: true, caches: true, external: true };
+                this.originalData = JSON.parse(JSON.stringify(data));
+
+                this.initializeNetwork();
+                this.setupEventListeners();
+                this.loadData();
+            }
+
+            initializeNetwork() {
+                const options = {
+                    physics: {
+                        enabled: true,
+                        stabilization: { iterations: 200 },
+                        barnesHut: {
+                            gravitationalConstant: -26000,
+                            centralGravity: 0.3,
+                            springLength: 200,
+                            springConstant: 0.04
+                        }
+                    },
+                    nodes: {
+                        font: { size: 13, color: '#333' },
+                        margin: 10,
+                        widthConstraint: { maximum: 150 },
+                        borderWidth: 2,
+                        borderWidthSelected: 3,
+                        shadow: { enabled: true, color: 'rgba(0,0,0,0.2)', size: 8, x: 3, y: 3 }
+                    },
+                    edges: {
+                        font: { size: 11, color: '#666' },
+                        color: { color: '#999', highlight: '#2196F3', hover: '#666' },
+                        smooth: { type: 'cubicBezier' },
+                        arrows: 'to',
+                        shadow: { enabled: true, color: 'rgba(0,0,0,0.1)', size: 4, x: 2, y: 2 }
+                    },
+                    interaction: {
+                        hover: true,
+                        navigationButtons: false,
+                        keyboard: true
+                    }
+                };
+
+                this.network = new vis.Network(this.container, { nodes: this.nodes, edges: this.edges }, options);
+
+                this.network.on('selectNode', (params) => this.onNodeSelected(params.nodes[0]));
+                this.network.on('deselectNode', () => this.onNodeDeselected());
+                this.network.on('hoverNode', (params) => this.onNodeHover(params.node));
+            }
+
+            loadData() {
+                this.nodes.clear();
+                this.edges.clear();
+
+                const namespaceColors = { core: '#2196F3', commerce: '#FF9800', common: '#4CAF50' };
+
+                this.originalData.nodes.forEach(nodeData => {
+                    const node = {
+                        id: nodeData.id,
+                        label: nodeData.label,
+                        title: nodeData.label,
+                        data: nodeData,
+                        metadata: nodeData
+                    };
+
+                    if (nodeData.type === 'service') {
+                        node.color = namespaceColors[nodeData.namespace] || '#999';
+                        node.shape = 'box';
+                        node.category = 'services';
+                    } else if (nodeData.type === 'database') {
+                        node.category = 'databases';
+                        if (nodeData.dbType === 'postgres') {
+                            node.color = '#336791';
+                            node.shape = 'database';
+                        } else if (nodeData.dbType === 'mongodb') {
+                            node.color = '#13AA52';
+                            node.shape = 'database';
+                        } else {
+                            node.color = '#999';
+                            node.shape = 'database';
+                        }
+                    } else if (nodeData.type === 'cache') {
+                        node.color = '#DC382D';
+                        node.shape = 'box';
+                        node.category = 'caches';
+                    } else if (nodeData.type === 'external') {
+                        node.category = 'external';
+                        if (nodeData.externalType === 'oss') {
+                            node.color = '#FF6B35';
+                        } else if (nodeData.externalType === 'kafka') {
+                            node.color = '#231F20';
+                        } else {
+                            node.color = '#9C27B0';
+                        }
+                        node.shape = 'box';
+                    }
+
+                    this.nodes.add(node);
+                });
+
+                this.originalData.edges.forEach(edgeData => {
+                    this.edges.add({
+                        from: edgeData.from,
+                        to: edgeData.to,
+                        label: edgeData.label,
+                        title: `${edgeData.protocol || 'Unknown'}: ${edgeData.label}`,
+                        metadata: edgeData
+                    });
+                });
+
+                this.updateGraphStats();
+            }
+
+            onNodeSelected(nodeId) {
+                this.selectedNodeId = nodeId;
+                const nodeData = this.nodes.get(nodeId);
+
+                if (!nodeData) return;
+
+                const html = this.renderNodeInfo(nodeData);
+                document.getElementById('selectedNodeInfo').innerHTML = html;
+                document.getElementById('selectedNodeSection').style.display = 'block';
+
+                this.highlightNodeDependencies(nodeId);
+                this.network.selectNodes([nodeId]);
+            }
+
+            onNodeDeselected() {
+                this.selectedNodeId = null;
+                document.getElementById('selectedNodeSection').style.display = 'none';
+                document.getElementById('dependenciesSection').style.display = 'none';
+                document.getElementById('dependentsSection').style.display = 'none';
+                this.network.unselectAll();
+            }
+
+            renderNodeInfo(nodeData) {
+                const meta = nodeData.data || nodeData.metadata || {};
+                let html = `<div class="node-info">`;
+                html += `<div class="node-name">${nodeData.label}</div>`;
+                html += `<span class="node-type ${meta.type || 'service'}">${meta.type || 'unknown'}</span>`;
+
+                if (meta.instanceId) {
+                    html += `<div class="node-detail"><span class="node-detail-label">Instance ID:</span> ${meta.instanceId}</div>`;
+                }
+                if (meta.dbType) {
+                    html += `<div class="node-detail"><span class="node-detail-label">Database:</span> ${meta.dbType}</div>`;
+                }
+                if (meta.externalType) {
+                    html += `<div class="node-detail"><span class="node-detail-label">Type:</span> ${meta.externalType}</div>`;
+                }
+                if (meta.namespace) {
+                    html += `<div class="node-detail"><span class="node-detail-label">Namespace:</span> ${meta.namespace}</div>`;
+                }
+                if (meta.cluster) {
+                    html += `<div class="node-detail"><span class="node-detail-label">Cluster:</span> ${meta.cluster}</div>`;
+                }
+                if (meta.envKey) {
+                    html += `<div class="node-detail"><span class="node-detail-label">Env Key:</span> ${meta.envKey}</div>`;
+                }
+                if (meta.endpoint) {
+                    html += `<div class="node-detail"><span class="node-detail-label">Endpoint:</span> <code style="font-size: 10px; background: #f0f0f0; padding: 2px 4px; border-radius: 2px;">${meta.endpoint}</code></div>`;
+                }
+
+                html += `</div>`;
+                return html;
+            }
+
+            highlightNodeDependencies(nodeId) {
+                const connectedEdges = this.edges.get({
+                    filter: edge => edge.from === nodeId || edge.to === nodeId
+                });
+
+                const dependencyIds = new Set();
+                const dependentIds = new Set();
+
+                connectedEdges.forEach(edge => {
+                    if (edge.from === nodeId) {
+                        dependencyIds.add(edge.to);
+                    } else {
+                        dependentIds.add(edge.from);
+                    }
+                });
+
+                this.renderDependencies(dependencyIds, 'dependenciesList', 'dependenciesSection');
+                this.renderDependencies(dependentIds, 'dependentsList', 'dependentsSection');
+
+                const allHighlighted = new Set([nodeId, ...dependencyIds, ...dependentIds]);
+                const highlightedEdges = connectedEdges.map(e => e.id || `${e.from}-${e.to}`);
+
+                this.network.selectNodes(Array.from(allHighlighted));
+            }
+
+            renderDependencies(nodeIds, listElementId, sectionId) {
+                const listElement = document.getElementById(listElementId);
+                const sectionElement = document.getElementById(sectionId);
+
+                if (nodeIds.size === 0) {
+                    sectionElement.style.display = 'none';
+                    return;
+                }
+
+                sectionElement.style.display = 'block';
+                let html = `<div class="dependency-count">${nodeIds.size} connection${nodeIds.size !== 1 ? 's' : ''}</div>`;
+
+                nodeIds.forEach(id => {
+                    const node = this.nodes.get(id);
+                    html += `<div class="dependency-item" onclick="graph.onNodeSelected('${id}')">${node.label}</div>`;
+                });
+
+                listElement.innerHTML = html;
+            }
+
+            onNodeHover(nodeId) {
+                const node = this.nodes.get(nodeId);
+                if (node && node.data) {
+                    let tooltip = node.label;
+                    if (node.data.instanceId) tooltip += ` (${node.data.instanceId})`;
+                    node.title = tooltip;
+                }
+            }
+
+            updateGraphStats() {
+                document.getElementById('nodeCount').textContent = this.nodes.length;
+                document.getElementById('edgeCount').textContent = this.edges.length;
+            }
+
+            setupEventListeners() {
+                document.getElementById('searchBox').addEventListener('input', (e) => this.search(e.target.value));
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetView());
+                document.getElementById('fitBtn').addEventListener('click', () => this.fitGraph());
+
+                document.querySelectorAll('[data-filter]').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.toggleFilter(e.target.dataset.filter, e.target));
+                });
+            }
+
+            search(query) {
+                const lowerQuery = query.toLowerCase();
+                const matchedNodeIds = new Set();
+
+                this.originalData.nodes.forEach(nodeData => {
+                    const label = nodeData.label.toLowerCase();
+                    const instanceId = (nodeData.instanceId || '').toLowerCase();
+                    const endpoint = (nodeData.endpoint || '').toLowerCase();
+
+                    if (label.includes(lowerQuery) || instanceId.includes(lowerQuery) || endpoint.includes(lowerQuery)) {
+                        matchedNodeIds.add(nodeData.id);
+                    }
+                });
+
+                if (query.length === 0) {
+                    this.network.unselectAll();
+                    return;
+                }
+
+                this.network.selectNodes(Array.from(matchedNodeIds));
+                if (matchedNodeIds.size > 0) {
+                    const firstMatch = Array.from(matchedNodeIds)[0];
+                    this.network.focus(firstMatch, { scale: 1.5, animation: true });
+                }
+            }
+
+            toggleFilter(category, button) {
+                this.filterState[category] = !this.filterState[category];
+                button.classList.toggle('active');
+
+                const nodesToHide = this.nodes.get({
+                    filter: node => {
+                        const cat = node.category;
+                        return !this.filterState[cat];
+                    }
+                });
+
+                const nodesToShow = this.nodes.get({
+                    filter: node => {
+                        const cat = node.category;
+                        return this.filterState[cat];
+                    }
+                });
+
+                this.nodes.update(nodesToHide.map(n => ({ ...n, hidden: true })));
+                this.nodes.update(nodesToShow.map(n => ({ ...n, hidden: false })));
+
+                const edgesToHide = this.edges.get({
+                    filter: edge => {
+                        const fromNode = this.nodes.get(edge.from);
+                        const toNode = this.nodes.get(edge.to);
+                        return fromNode.hidden || toNode.hidden;
+                    }
+                });
+
+                const edgesToShow = this.edges.get({
+                    filter: edge => {
+                        const fromNode = this.nodes.get(edge.from);
+                        const toNode = this.nodes.get(edge.to);
+                        return !fromNode.hidden && !toNode.hidden;
+                    }
+                });
+
+                this.edges.update(edgesToHide.map(e => ({ ...e, hidden: true })));
+                this.edges.update(edgesToShow.map(e => ({ ...e, hidden: false })));
+            }
+
+            resetView() {
+                this.network.unselectAll();
+                document.getElementById('searchBox').value = '';
+                document.getElementById('selectedNodeSection').style.display = 'none';
+                document.getElementById('dependenciesSection').style.display = 'none';
+                document.getElementById('dependentsSection').style.display = 'none';
+            }
+
+            fitGraph() {
+                this.network.fit({ animation: true });
+            }
+        }
+
+        let graph;
+        document.addEventListener('DOMContentLoaded', () => {
+            graph = new ServiceGraph('network', SAMPLE_DATA);
+            graph.fitGraph();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+[
+  {
+    "metadata": {"name": "nocode-config", "namespace": "nocode"},
+    "data": {
+      "PG_HOST": "rm-abcde12345.pg.rds.aliyuncs.com",
+      "PG_PORT": "5432",
+      "PG_USER": "nocode_user",
+      "PG_DATABASE": "nocode_db",
+      "MONGO_HOST": "dds-xyz9876.mongodb.rds.aliyuncs.com",
+      "MONGO_PORT": "27017",
+      "MONGO_USER": "nocode_mongo",
+      "MONGO_DATABASE": "nocode_docs",
+      "REDIS_HOST": "r-redis001.redis.rds.aliyuncs.com",
+      "REDIS_PORT": "6379",
+      "AUTH_SERVICE_HOST": "auth-service.auth.svc.cluster.local",
+      "BILLING_SERVICE_URL": "http://billing-service.billing.svc.cluster.local:8080",
+      "OSS_ENDPOINT": "nocode-bucket.oss-ap-southeast-1.aliyuncs.com",
+      "APP_PORT": "8080",
+      "LOG_LEVEL": "info"
+    }
+  },
+  {
+    "metadata": {"name": "auth-config", "namespace": "auth"},
+    "data": {
+      "PG_HOST": "rm-auth99999.pg.rds.aliyuncs.com",
+      "PG_PORT": "5432",
+      "PG_USER": "auth_user",
+      "PG_DATABASE": "auth_db",
+      "REDIS_HOST": "r-redis001.redis.rds.aliyuncs.com",
+      "REDIS_PORT": "6379",
+      "OSS_ENDPOINT": "mekari-assets.oss-ap-southeast-1.aliyuncs.com",
+      "APP_PORT": "8080",
+      "JWT_EXPIRY": "3600",
+      "LOG_LEVEL": "warn"
+    }
+  },
+  {
+    "metadata": {"name": "billing-config", "namespace": "billing"},
+    "data": {
+      "PG_HOST": "rm-billing77777.pg.rds.aliyuncs.com",
+      "PG_PORT": "5432",
+      "PG_USER": "billing_user",
+      "PG_DATABASE": "billing_db",
+      "REDIS_HOST": "r-redis001.redis.rds.aliyuncs.com",
+      "REDIS_PORT": "6379",
+      "AUTH_SERVICE_HOST": "auth-service.auth.svc.cluster.local",
+      "STRIPE_API_URL": "https://api.stripe.com",
+      "XENDIT_API_URL": "https://api.xendit.co",
+      "APP_PORT": "8080"
+    }
+  },
+  {
+    "metadata": {"name": "notification-config", "namespace": "notification"},
+    "data": {
+      "PG_HOST": "rm-notif55555.pg.rds.aliyuncs.com",
+      "PG_PORT": "5432",
+      "PG_USER": "notif_user",
+      "PG_DATABASE": "notification_db",
+      "AUTH_SERVICE_HOST": "auth-service.auth.svc.cluster.local",
+      "SENDGRID_API_URL": "https://api.sendgrid.com",
+      "TWILIO_API_URL": "https://api.twilio.com",
+      "FIREBASE_URL": "https://mekari-notif.firebaseio.com",
+      "APP_PORT": "8080"
+    }
+  },
+  {
+    "metadata": {"name": "platform-config", "namespace": "platform"},
+    "data": {
+      "PG_HOST": "rm-platform33333.pg.rds.aliyuncs.com",
+      "PG_PORT": "5432",
+      "PG_USER": "platform_user",
+      "PG_DATABASE": "platform_db",
+      "ELASTICSEARCH_HOST": "es-platform.elasticsearch.ap-southeast-1.aliyuncs.com",
+      "ELASTICSEARCH_PORT": "9200",
+      "REDIS_HOST": "r-redis002.redis.rds.aliyuncs.com",
+      "AUTH_SERVICE_HOST": "auth-service.auth.svc.cluster.local",
+      "NOCODE_SERVICE_URL": "http://nocode-service.nocode.svc.cluster.local:8080",
+      "APP_PORT": "8080"
+    }
+  }
+]

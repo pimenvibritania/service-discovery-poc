@@ -1,0 +1,6 @@
+1. **MUST**: for any question, clarification, or confirmation, ask from hitl-web-mcp or tools askQuestion
+2. **MUST**: for confluence docs, use atlassian mcp
+3. **MUST**: after complete your work, ask me to review your work and give feedback, if there is any adjustment needed, you can adjust your work based on the feedback and ask me to review again until I approve your work via hitl-web-mcp or tools askQuestion
+4. **MUST**: Always ask me for Final Confirmation before you consider your work done for "EVERYTHING OKAY" or Type custom answer (for need adjustment), and I will give you the final approval via hitl-web-mcp or tools askQuestion
+5. **MUST**: if you decide to Compact the Context, remember to still keep about hitl-web-mcp, atlassian mcp, and tools askQuestion in the context, because you will need to use them to ask questions and get confirmations from me during your work.
+6. **MUST**: if you need to use any tools, please make sure to ask me for permission first via hitl-web-mcp or tools askQuestion, and provide a clear explanation of why you need to use the tool and how it will help you complete your work.
